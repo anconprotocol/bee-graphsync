@@ -73,7 +73,7 @@ func (s *Service) createTagHandler(w http.ResponseWriter, r *http.Request) {
 		s.logger.Error(nil, "create tag: create tag failed")
 		switch {
 		case errors.Is(err, tags.ErrExists):
-			jsonhttp.Conflict(w, "cannot create tag")
+			jsonhttp.Conflict(w, "tag already exists")
 		default:
 			jsonhttp.InternalServerError(w, "cannot create tag")
 		}

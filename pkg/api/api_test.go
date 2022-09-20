@@ -438,11 +438,9 @@ func TestPostageHeaderError(t *testing.T) {
 	for _, endpoint := range endpoints {
 		t.Run(endpoint+": empty batch", func(t *testing.T) {
 			hexbatch := hex.EncodeToString(batchEmpty)
-			var expCode int
+			var expCode = http.StatusBadRequest
 			if endpoint != "chunks" {
 				expCode = http.StatusNotFound
-			} else {
-				expCode = http.StatusBadRequest
 			}
 			jsonhttptest.Request(t, client, http.MethodPost, "/"+endpoint, expCode,
 				jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, hexbatch),
@@ -462,11 +460,9 @@ func TestPostageHeaderError(t *testing.T) {
 		})
 		t.Run(endpoint+": bad batch", func(t *testing.T) {
 			hexbatch := hex.EncodeToString(batchInvalid)
-			var expCode int
+			var expCode = http.StatusBadRequest
 			if endpoint != "chunks" {
 				expCode = http.StatusNotFound
-			} else {
-				expCode = http.StatusBadRequest
 			}
 			jsonhttptest.Request(t, client, http.MethodPost, "/"+endpoint, expCode,
 				jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, hexbatch),
