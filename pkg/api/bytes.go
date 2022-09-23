@@ -43,6 +43,10 @@ func (s *Service) bytesUploadHandler(w http.ResponseWriter, r *http.Request) {
 			jsonhttp.BadRequest(w, "batch not usable yet")
 		case errors.Is(err, errInvalidPostageBatch):
 			jsonhttp.NotFound(w, "invalid batch id")
+		case errors.Is(err, postage.ErrNotUsable):
+			jsonhttp.BadRequest(w, "batch not usable yet")
+		case errors.Is(err, postage.ErrNotFound):
+			jsonhttp.NotFound(w, "invalid batch id")
 		default:
 			jsonhttp.InternalServerError(w, nil)
 		}
@@ -79,7 +83,7 @@ func (s *Service) bytesUploadHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				s.logger.Debug("bytes upload: increment tag failed", "error", err)
 				s.logger.Error(nil, "bytes upload: increment tag failed")
-				jsonhttp.InternalServerError(w, "increment tag")
+				jsonhttp.InternalServerError(w, "increment tag failed")
 				return
 			}
 		}
@@ -103,14 +107,14 @@ func (s *Service) bytesUploadHandler(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, postage.ErrBucketFull):
 			jsonhttp.PaymentRequired(w, "batch is overissued")
 		default:
-			jsonhttp.InternalServerError(w, "bytes upload: split write all failed")
+			jsonhttp.InternalServerError(w, "split write all failed")
 		}
 		return
 	}
 	if err = wait(); err != nil {
 		logger.Debug("bytes upload: sync chunks failed", "error", err)
 		logger.Error(nil, "bytes upload: sync chunks failed")
-		jsonhttp.InternalServerError(w, "bytes upload: sync chunks failed")
+		jsonhttp.InternalServerError(w, "sync chunks failed")
 		return
 	}
 
@@ -119,7 +123,7 @@ func (s *Service) bytesUploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			logger.Debug("bytes upload: done split failed", "error", err)
 			logger.Error(nil, "bytes upload: done split failed")
-			jsonhttp.InternalServerError(w, "bytes upload: done split filed")
+			jsonhttp.InternalServerError(w, "done split filed")
 			return
 		}
 	}
@@ -130,9 +134,9 @@ func (s *Service) bytesUploadHandler(w http.ResponseWriter, r *http.Request) {
 			logger.Error(nil, "bytes upload: pin creation failed")
 			switch {
 			case errors.Is(err, storage.ErrNotFound):
-				jsonhttp.NotFound(w, "bytes upload: not found")
+				jsonhttp.NotFound(w, "not found")
 			default:
-				jsonhttp.InternalServerError(w, "bzz upload: create pin failed")
+				jsonhttp.InternalServerError(w, "create pin failed")
 			}
 			return
 		}

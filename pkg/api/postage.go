@@ -95,7 +95,7 @@ func (s *Service) postageCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if price, ok := r.Header[gasPriceHeader]; ok {
 		p, ok := big.NewInt(0).SetString(price[0], 10)
 		if !ok {
-			s.logger.Error(nil, "create batch: bad gas price")
+			s.logger.Error(nil, "bad gas price")
 			jsonhttp.BadRequest(w, errBadGasPrice)
 			return
 		}
@@ -413,7 +413,7 @@ func (s *Service) chainStateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Debug("chainstate: get block number failed", "error", err)
 		logger.Error(nil, "chainstate: get block number failed")
-		jsonhttp.InternalServerError(w, "chainstate: block number unavailable")
+		jsonhttp.InternalServerError(w, "block number unavailable")
 		return
 	}
 	jsonhttp.OK(w, chainStateResponse{
@@ -485,7 +485,7 @@ func (s *Service) postageTopUpHandler(w http.ResponseWriter, r *http.Request) {
 	if price, ok := r.Header[gasPriceHeader]; ok {
 		p, ok := big.NewInt(0).SetString(price[0], 10)
 		if !ok {
-			s.logger.Error(nil, "topup batch: bad gas price")
+			s.logger.Error(nil, "bad gas price")
 			jsonhttp.BadRequest(w, errBadGasPrice)
 			return
 		}
@@ -496,18 +496,18 @@ func (s *Service) postageTopUpHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, postagecontract.ErrInsufficientFunds) {
 			s.logger.Debug("topup batch: out of funds", "batch_id", hex.EncodeToString(id), "amount", amount, "error", err)
-			s.logger.Error(nil, "topup batch: out of funds")
+			s.logger.Error(nil, "out of funds")
 			jsonhttp.PaymentRequired(w, "out of funds")
 			return
 		}
 		if errors.Is(err, postagecontract.ErrNotImplemented) {
 			s.logger.Debug("topup batch: not implemented", "error", err)
-			s.logger.Error(nil, "topup batch: not implemented")
+			s.logger.Error(nil, "not implemented")
 			jsonhttp.NotImplemented(w, nil)
 			return
 		}
 		s.logger.Debug("topup batch: topup failed", "batch_id", hex.EncodeToString(id), "amount", amount, "error", err)
-		s.logger.Error(nil, "topup batch: topup failed")
+		s.logger.Error(nil, "topup failed")
 		jsonhttp.InternalServerError(w, "cannot topup batch")
 		return
 	}

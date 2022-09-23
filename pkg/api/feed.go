@@ -159,7 +159,11 @@ func (s *Service) feedPostHandler(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, errBatchUnusable):
 			jsonhttp.BadRequest(w, "batch not usable yet")
 		case errors.Is(err, errInvalidPostageBatch):
-			jsonhttp.NotFound(w, "batch id not found")
+			jsonhttp.NotFound(w, "invalid batch id")
+		case errors.Is(err, postage.ErrNotUsable):
+			jsonhttp.BadRequest(w, "batch not usable yet")
+		case errors.Is(err, postage.ErrNotFound):
+			jsonhttp.NotFound(w, "invalid batch id")
 		default:
 			jsonhttp.InternalServerError(w, nil)
 		}
@@ -220,7 +224,7 @@ func (s *Service) feedPostHandler(w http.ResponseWriter, r *http.Request) {
 		if err := s.pinning.CreatePin(r.Context(), ref, false); err != nil {
 			s.logger.Debug("feed post: pin creation failed: %v", "address", ref, "error", err)
 			s.logger.Error(nil, "feed post: pin creation failed")
-			jsonhttp.InternalServerError(w, "feed post: creation of pin failed")
+			jsonhttp.InternalServerError(w, "creation of pin failed")
 			return
 		}
 	}
@@ -228,7 +232,7 @@ func (s *Service) feedPostHandler(w http.ResponseWriter, r *http.Request) {
 	if err = wait(); err != nil {
 		s.logger.Debug("feed post: sync chunks failed", "error", err)
 		s.logger.Error(nil, "feed post: sync chunks failed")
-		jsonhttp.InternalServerError(w, "feed upload: sync failed")
+		jsonhttp.InternalServerError(w, "sync failed")
 		return
 	}
 

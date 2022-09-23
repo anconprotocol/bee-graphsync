@@ -32,19 +32,19 @@ func (s *Service) stewardshipPutHandler(w http.ResponseWriter, r *http.Request) 
 	case errors.Is(err, resolver.ErrServiceNotAvailable):
 		s.logger.Debug("stewardship put: service unavailable", "string", nameOrHex, "error", err)
 		s.logger.Error(nil, "stewardship put: service unavailable")
-		jsonhttp.InternalServerError(w, "stewardship put: resolver service unavailable")
+		jsonhttp.InternalServerError(w, "resolver service unavailable")
 		return
 	case err != nil:
 		s.logger.Debug("stewardship put: resolve address or name string failed", "string", nameOrHex, "error", err)
 		s.logger.Error(nil, "stewardship put: resolve address or name string failed")
-		jsonhttp.InternalServerError(w, "stewardship put: resolve name or address")
+		jsonhttp.InternalServerError(w, "resolve name or address")
 		return
 	}
 	err = s.steward.Reupload(r.Context(), address)
 	if err != nil {
 		s.logger.Debug("stewardship put: re-upload failed", "chunk_address", address, "error", err)
 		s.logger.Error(nil, "stewardship put: re-upload failed")
-		jsonhttp.InternalServerError(w, "stewardship put: re-upload failed")
+		jsonhttp.InternalServerError(w, "re-upload failed")
 		return
 	}
 	jsonhttp.OK(w, nil)

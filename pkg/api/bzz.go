@@ -55,7 +55,11 @@ func (s *Service) bzzUploadHandler(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, errBatchUnusable):
 			jsonhttp.BadRequest(w, "batch not usable yet")
 		case errors.Is(err, errInvalidPostageBatch):
-			jsonhttp.NotFound(w, "batch id not found")
+			jsonhttp.NotFound(w, "invalid batch id")
+		case errors.Is(err, postage.ErrNotUsable):
+			jsonhttp.BadRequest(w, "batch not usable yet")
+		case errors.Is(err, postage.ErrNotFound):
+			jsonhttp.NotFound(w, "invalid batch id")
 		default:
 			jsonhttp.InternalServerError(w, nil)
 		}
@@ -94,13 +98,13 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 		logger.Error(nil, "bzz upload file: get or create tag failed")
 		switch {
 		case errors.Is(err, tags.ErrExists):
-			jsonhttp.Conflict(w, "bzz upload file: conflict with current state of resource")
+			jsonhttp.Conflict(w, "conflict with current state of resource")
 		case errors.Is(err, errCannotParse):
-			jsonhttp.BadRequest(w, "bzz upload file: cannot parse")
+			jsonhttp.BadRequest(w, "cannot parse")
 		case errors.Is(err, tags.ErrNotFound):
 			jsonhttp.NotFound(w, "bzz upload file: not found")
 		default:
-			jsonhttp.InternalServerError(w, "bzz upload file: get or create tag failed")
+			jsonhttp.InternalServerError(w, "get or create tag failed")
 		}
 		return
 	}
@@ -112,7 +116,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 			if err != nil {
 				s.logger.Debug("bzz upload file: increment tag failed", "error", err)
 				s.logger.Error(nil, "bzz upload file: increment tag failed")
-				jsonhttp.InternalServerError(w, "bzz upload file: increment tag failed")
+				jsonhttp.InternalServerError(w, "increment tag failed")
 				return
 			}
 		}
@@ -155,7 +159,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 		logger.Error(nil, "bzz upload file: create manifest failed", "file_name", fileName)
 		switch {
 		case errors.Is(err, manifest.ErrInvalidManifestType):
-			jsonhttp.BadRequest(w, "bzz upload file: create manifest failed")
+			jsonhttp.BadRequest(w, "create manifest failed")
 		default:
 			jsonhttp.InternalServerError(w, nil)
 		}
@@ -170,7 +174,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 	if err != nil {
 		logger.Debug("bzz upload file: adding metadata to manifest failed", "file_name", fileName, "error", err)
 		logger.Error(nil, "bzz upload file: adding metadata to manifest failed", "file_name", fileName)
-		jsonhttp.InternalServerError(w, "bzz upload file: add metadata failed")
+		jsonhttp.InternalServerError(w, "add metadata failed")
 		return
 	}
 
@@ -183,7 +187,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 	if err != nil {
 		logger.Debug("bzz upload file: adding file to manifest failed", "file_name", fileName, "error", err)
 		logger.Error(nil, "bzz upload file: adding file to manifest failed", "file_name", fileName)
-		jsonhttp.InternalServerError(w, "bzz upload file: add file failed")
+		jsonhttp.InternalServerError(w, "add file failed")
 		return
 	}
 
@@ -212,7 +216,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 		case errors.Is(err, postage.ErrBucketFull):
 			jsonhttp.PaymentRequired(w, "batch is overissued")
 		default:
-			jsonhttp.InternalServerError(w, "bzz upload file: manifest store failed")
+			jsonhttp.InternalServerError(w, "manifest store failed")
 		}
 		return
 	}
@@ -223,7 +227,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 		if err != nil {
 			logger.Debug("bzz upload file: done split failed", "error", err)
 			logger.Error(nil, "bzz upload file: done split failed")
-			jsonhttp.InternalServerError(w, "bzz upload file: done split failed")
+			jsonhttp.InternalServerError(w, "done split failed")
 			return
 		}
 	}
@@ -236,7 +240,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 			case errors.Is(err, storage.ErrNotFound):
 				jsonhttp.NotFound(w, "bzz upload file: not found")
 			default:
-				jsonhttp.InternalServerError(w, "bzz upload file: create pin failed")
+				jsonhttp.InternalServerError(w, "create pin failed")
 			}
 			return
 		}
@@ -245,7 +249,7 @@ func (s *Service) fileUploadHandler(w http.ResponseWriter, r *http.Request, stor
 	if err = waitFn(); err != nil {
 		s.logger.Debug("bzz upload: sync chunks failed", "error", err)
 		s.logger.Error(nil, "bzz upload: sync chunks failed")
-		jsonhttp.InternalServerError(w, "bzz upload file: sync chunks failed")
+		jsonhttp.InternalServerError(w, "sync chunks failed")
 		return
 	}
 
@@ -298,7 +302,7 @@ FETCH:
 		logger.Error(nil, "bzz download: invalid manifest type")
 		switch {
 		case errors.Is(err, manifest.ErrInvalidManifestType):
-			jsonhttp.BadRequest(w, "bzz download: invalid manifest type")
+			jsonhttp.BadRequest(w, "invalid manifest type")
 		default:
 			jsonhttp.NotFound(w, nil)
 		}
@@ -468,7 +472,7 @@ func (s *Service) downloadHandler(w http.ResponseWriter, r *http.Request, refere
 		}
 		logger.Debug("api download: unexpected error", "address", reference, "error", err)
 		logger.Error(nil, "api download: unexpected error")
-		jsonhttp.InternalServerError(w, "api download: joiner failed")
+		jsonhttp.InternalServerError(w, "joiner failed")
 		return
 	}
 

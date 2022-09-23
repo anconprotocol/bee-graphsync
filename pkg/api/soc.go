@@ -174,7 +174,7 @@ func (s *Service) socUploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err := s.pinning.CreatePin(ctx, sch.Address(), false); err != nil {
 			s.logger.Debug("soc upload: create pin failed", "chunk_address", sch.Address(), "error", err)
 			s.logger.Error(nil, "soc upload: create pin failed")
-			jsonhttp.InternalServerError(w, "soc upload: creation of pin failed")
+			jsonhttp.InternalServerError(w, "creation of pin failed")
 			return
 		}
 	}

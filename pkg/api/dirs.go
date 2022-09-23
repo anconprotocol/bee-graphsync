@@ -69,13 +69,13 @@ func (s *Service) dirUploadHandler(w http.ResponseWriter, r *http.Request, store
 		logger.Error(nil, "bzz upload dir: get or create tag failed")
 		switch {
 		case errors.Is(err, tags.ErrExists):
-			jsonhttp.Conflict(w, "bzz upload dir: conflict with current state of resource")
+			jsonhttp.Conflict(w, "conflict with current state of resource")
 		case errors.Is(err, errCannotParse):
-			jsonhttp.BadRequest(w, "bzz upload dir: cannot parse")
+			jsonhttp.BadRequest(w, "cannot parse")
 		case errors.Is(err, tags.ErrNotFound):
-			jsonhttp.NotFound(w, "bzz upload dir: not found")
+			jsonhttp.NotFound(w, "not found")
 		default:
-			jsonhttp.InternalServerError(w, "bzz upload dir: get or create tag failed")
+			jsonhttp.InternalServerError(w, "get or create tag failed")
 		}
 		return
 	}
@@ -115,7 +115,7 @@ func (s *Service) dirUploadHandler(w http.ResponseWriter, r *http.Request, store
 		if err != nil {
 			logger.Debug("bzz upload dir: done split failed", "error", err)
 			logger.Error(nil, "bzz upload dir: done split failed")
-			jsonhttp.InternalServerError(w, "bzz upload dir: done split failed")
+			jsonhttp.InternalServerError(w, "done split failed")
 			return
 		}
 	}
@@ -124,7 +124,7 @@ func (s *Service) dirUploadHandler(w http.ResponseWriter, r *http.Request, store
 		if err := s.pinning.CreatePin(r.Context(), reference, false); err != nil {
 			logger.Debug("bzz upload dir: pin creation failed", "address", reference, "error", err)
 			logger.Error(nil, "bzz upload dir: pin creation failed")
-			jsonhttp.InternalServerError(w, "bzz upload dir: create pin failed")
+			jsonhttp.InternalServerError(w, "create pin failed")
 			return
 		}
 	}
@@ -132,7 +132,7 @@ func (s *Service) dirUploadHandler(w http.ResponseWriter, r *http.Request, store
 	if err = waitFn(); err != nil {
 		s.logger.Debug("bzz upload: sync chunks failed", "error", err)
 		s.logger.Error(nil, "bzz upload: sync chunks failed")
-		jsonhttp.InternalServerError(w, "bzz upload: sync chunks failed")
+		jsonhttp.InternalServerError(w, "sync chunks failed")
 		return
 	}
 
