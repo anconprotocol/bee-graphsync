@@ -36,7 +36,7 @@ func (s *Service) processUploadRequest(
 		if err != nil {
 			s.logger.Debug("chunk upload: get tag failed", "error", err)
 			s.logger.Error(nil, "chunk upload: get tag failed")
-			return nil, nil, nil, nil, errors.New("cannot get tag")
+			return nil, nil, nil, nil, err
 		}
 
 		// add the tag to the context if it exists

@@ -76,7 +76,7 @@ func TestTags(t *testing.T) {
 		jsonhttptest.Request(t, client, http.MethodPost, chunksResource, http.StatusBadRequest,
 			jsonhttptest.WithRequestBody(bytes.NewReader(chunk.Data())),
 			jsonhttptest.WithExpectedJSONResponse(jsonhttp.StatusResponse{
-				Message: "cannot get tag",
+				Message: "unable to parse tag",
 				Code:    http.StatusBadRequest,
 			}),
 			jsonhttptest.WithRequestHeader(api.SwarmTagHeader, "invalid_id.jpg"), // the value should be uint32
