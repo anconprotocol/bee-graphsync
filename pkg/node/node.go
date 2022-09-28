@@ -149,7 +149,6 @@ type Options struct {
 	ResolverConnectionCfgs     []multiresolver.ConnectionConfig
 	RetrievalCaching           bool
 	BootnodeMode               bool
-	SwapEndpoint               string // deprecated: use rpc endpoint instead
 	RpcEndpoint                string
 	SwapFactoryAddress         string
 	SwapLegacyFactoryAddresses []string
@@ -263,9 +262,7 @@ func NewBee(interrupt chan struct{}, sysInterrupt chan os.Signal, addr string, p
 		pollingInterval    = time.Duration(o.BlockTime) * time.Second
 		erc20Service       erc20.Service
 	)
-	if o.SwapEndpoint != "" {
-		o.RpcEndpoint = o.SwapEndpoint
-	}
+
 	chainEnabled := isChainEnabled(o, o.RpcEndpoint, logger)
 
 	var batchStore postage.Storer = new(postage.NoOpBatchStore)

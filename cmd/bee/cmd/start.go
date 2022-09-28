@@ -170,6 +170,11 @@ func (c *command) initStartCmd() (err error) {
 
 			interruptChannel := make(chan struct{})
 
+			rpcEndpoint := c.config.GetString(optionNameRpcEndpoint)
+			swapEndpoint := c.config.GetString(optionNameSwapEndpoint)
+			if swapEndpoint != "" {
+				rpcEndpoint = swapEndpoint
+			}
 			b, err := node.NewBee(interruptChannel, sysInterruptChannel, c.config.GetString(optionNameP2PAddr), signerConfig.publicKey, signerConfig.signer, networkID, logger, signerConfig.libp2pPrivateKey, signerConfig.pssPrivateKey, &node.Options{
 				DataDir:                    c.config.GetString(optionNameDataDir),
 				CacheCapacity:              c.config.GetUint64(optionNameCacheCapacity),
@@ -194,8 +199,7 @@ func (c *command) initStartCmd() (err error) {
 				PaymentEarly:               c.config.GetInt64(optionNamePaymentEarly),
 				ResolverConnectionCfgs:     resolverCfgs,
 				BootnodeMode:               bootNode,
-				SwapEndpoint:               c.config.GetString(optionNameSwapEndpoint),
-				RpcEndpoint:                c.config.GetString(optionNameRpcEndpoint),
+				RpcEndpoint:                rpcEndpoint,
 				SwapFactoryAddress:         c.config.GetString(optionNameSwapFactoryAddress),
 				SwapLegacyFactoryAddresses: c.config.GetStringSlice(optionNameSwapLegacyFactoryAddresses),
 				SwapInitialDeposit:         c.config.GetString(optionNameSwapInitialDeposit),
