@@ -15,8 +15,8 @@ import (
 	"github.com/ethersphere/bee/pkg/jsonhttp"
 	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
 	"github.com/ethersphere/bee/pkg/sctx"
-	"github.com/ethersphere/bee/pkg/staking/stakingcontract"
-	stakingContractMock "github.com/ethersphere/bee/pkg/staking/stakingcontract/mock"
+	"github.com/ethersphere/bee/pkg/staking"
+	stakingMock "github.com/ethersphere/bee/pkg/staking/mock"
 	"github.com/ethersphere/bee/pkg/swarm"
 )
 
@@ -33,8 +33,8 @@ func TestDepositStake(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		t.Parallel()
 
-		contract := stakingContractMock.New(
-			stakingContractMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
+		contract := stakingMock.New(
+			stakingMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
 				return nil
 			}),
 		)
@@ -46,9 +46,9 @@ func TestDepositStake(t *testing.T) {
 		t.Parallel()
 
 		invalidMinStake := big.NewInt(0).String()
-		contract := stakingContractMock.New(
-			stakingContractMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
-				return stakingcontract.ErrInsufficientStakeAmount
+		contract := stakingMock.New(
+			stakingMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
+				return staking.ErrInsufficientStakeAmount
 			}),
 		)
 		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true, StakingContract: contract})
@@ -68,9 +68,9 @@ func TestDepositStake(t *testing.T) {
 	t.Run("out of funds", func(t *testing.T) {
 		t.Parallel()
 
-		contract := stakingContractMock.New(
-			stakingContractMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
-				return stakingcontract.ErrInsufficientFunds
+		contract := stakingMock.New(
+			stakingMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
+				return staking.ErrInsufficientFunds
 			}),
 		)
 		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true, StakingContract: contract})
@@ -81,8 +81,8 @@ func TestDepositStake(t *testing.T) {
 	t.Run("internal error", func(t *testing.T) {
 		t.Parallel()
 
-		contract := stakingContractMock.New(
-			stakingContractMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
+		contract := stakingMock.New(
+			stakingMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
 				return fmt.Errorf("some error")
 			}),
 		)
@@ -102,8 +102,8 @@ func TestDepositStake(t *testing.T) {
 	t.Run("gas limit header", func(t *testing.T) {
 		t.Parallel()
 
-		contract := stakingContractMock.New(
-			stakingContractMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
+		contract := stakingMock.New(
+			stakingMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
 				gasLimit := sctx.GetGasLimit(ctx)
 				if gasLimit != 2000000 {
 					t.Fatalf("want 2000000, got %d", gasLimit)
@@ -134,8 +134,8 @@ func TestGetStake(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		t.Parallel()
 
-		contract := stakingContractMock.New(
-			stakingContractMock.WithGetStake(func(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
+		contract := stakingMock.New(
+			stakingMock.WithGetStake(func(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
 				return big.NewInt(1), nil
 			}),
 		)
@@ -155,8 +155,8 @@ func TestGetStake(t *testing.T) {
 	t.Run("with error", func(t *testing.T) {
 		t.Parallel()
 
-		contractWithError := stakingContractMock.New(
-			stakingContractMock.WithGetStake(func(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
+		contractWithError := stakingMock.New(
+			stakingMock.WithGetStake(func(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
 				return big.NewInt(0), fmt.Errorf("get stake failed")
 			}),
 		)

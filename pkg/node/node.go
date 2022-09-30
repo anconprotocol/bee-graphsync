@@ -67,9 +67,10 @@ import (
 	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
 	"github.com/ethersphere/bee/pkg/settlement/swap/priceoracle"
 	"github.com/ethersphere/bee/pkg/shed"
-	"github.com/ethersphere/bee/pkg/staking/stakingcontract"
+	"github.com/ethersphere/bee/pkg/staking"
 	"github.com/ethersphere/bee/pkg/steward"
 	"github.com/ethersphere/bee/pkg/storage"
+	"github.com/ethersphere/bee/pkg/storageincentives"
 	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/ethersphere/bee/pkg/tags"
 	"github.com/ethersphere/bee/pkg/topology"
@@ -120,6 +121,7 @@ type Bee struct {
 	hiveCloser               io.Closer
 	chainSyncerCloser        io.Closer
 	depthMonitorCloser       io.Closer
+	storageIncetivesCloser   io.Closer
 	shutdownInProgress       bool
 	shutdownMutex            sync.Mutex
 	syncingStopped           *util.Signaler
@@ -162,7 +164,7 @@ type Options struct {
 	PostageContractAddress     string
 	StakingContractAddress     string
 	PriceOracleAddress         string
-	BlockTime                  uint64
+	BlockTime                  time.Duration
 	DeployGasPrice             string
 	WarmupTime                 time.Duration
 	ChainID                    int64
@@ -955,9 +957,22 @@ func NewBee(interrupt chan struct{}, sysInterrupt chan os.Signal, addr string, p
 		return nil, fmt.Errorf("pullsync protocol: %w", err)
 	}
 
+	staking := staking.New(overlayEthAddress, chainCfg.StakingContract, erc20Address, transactionService, common.BytesToHash(nonce))
+
 	if o.FullNodeMode {
 		depthMonitor := depthmonitor.New(kad, pullSyncProtocol, storer, batchStore, logger, warmupTime, depthmonitor.DefaultWakeupInterval)
 		b.depthMonitorCloser = depthMonitor
+
+		staked, err := staking.IsStaked(context.Background(), swarmAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: inject incentives contract, blocksRound, blocksPerPhase
+		if staked {
+			agent := storageincentives.New(swarmAddress, chainBackend, logger, depthMonitor, nil, batchStore, storer, o.BlockTime, 0, 0)
+			b.storageIncetivesCloser = agent
+		}
 	}
 
 	multiResolver := multiresolver.NewMultiResolver(
@@ -987,8 +1002,6 @@ func NewBee(interrupt chan struct{}, sysInterrupt chan os.Signal, addr string, p
 	feedFactory := factory.New(ns)
 	steward := steward.New(storer, traversalService, retrieve, pushSyncProtocol)
 
-	stakingContract := stakingcontract.New(overlayEthAddress, chainCfg.StakingContract, erc20Address, transactionService, common.BytesToHash(nonce))
-
 	extraOpts := api.ExtraOptions{
 		Pingpong:         pingPong,
 		TopologyDriver:   kad,
@@ -1007,7 +1020,7 @@ func NewBee(interrupt chan struct{}, sysInterrupt chan os.Signal, addr string, p
 		FeedFactory:      feedFactory,
 		Post:             post,
 		PostageContract:  postageContractService,
-		StakingContract:  stakingContract,
+		Staking:          staking,
 		Steward:          steward,
 		SyncStatus:       syncStatusFn,
 	}
@@ -1259,6 +1272,7 @@ func (b *Bee) Shutdown() error {
 	tryClose(b.topologyCloser, "topology driver")
 	tryClose(b.nsCloser, "netstore")
 	tryClose(b.depthMonitorCloser, "depthmonitor service")
+	tryClose(b.storageIncetivesCloser, "storage incentives agent")
 	tryClose(b.stateStoreCloser, "statestore")
 	tryClose(b.localstoreCloser, "localstore")
 	tryClose(b.resolverCloser, "resolver service")

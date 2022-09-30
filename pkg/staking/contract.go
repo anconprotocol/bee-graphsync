@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package stakingcontract
+package staking
 
 import (
 	"context"
@@ -37,6 +37,7 @@ var (
 type Interface interface {
 	DepositStake(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error
 	GetStake(ctx context.Context, overlay swarm.Address) (*big.Int, error)
+	IsStaked(ctx context.Context, overlay swarm.Address) (bool, error)
 }
 
 type contract struct {
@@ -156,9 +157,22 @@ func (s *contract) DepositStake(ctx context.Context, stakedAmount *big.Int, over
 func (s *contract) GetStake(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
 	stakedAmount, err := s.getStake(ctx, overlay)
 	if err != nil {
-		return big.NewInt(0), fmt.Errorf("staking contract: failed to get stake: %w", err)
+		return nil, fmt.Errorf("staking contract: failed to get stake: %w", err)
 	}
 	return stakedAmount, nil
+}
+
+func (s *contract) IsStaked(ctx context.Context, overlay swarm.Address) (bool, error) {
+	stakedAmount, err := s.getStake(ctx, overlay)
+	if err != nil {
+		return false, fmt.Errorf("staking contract: failed to get stake: %w", err)
+	}
+
+	if stakedAmount.Cmp(MinimumStakeAmount) > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (s *contract) getBalance(ctx context.Context) (*big.Int, error) {

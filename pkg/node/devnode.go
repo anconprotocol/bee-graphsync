@@ -42,8 +42,8 @@ import (
 	mockchequebook "github.com/ethersphere/bee/pkg/settlement/swap/chequebook/mock"
 	erc20mock "github.com/ethersphere/bee/pkg/settlement/swap/erc20/mock"
 	swapmock "github.com/ethersphere/bee/pkg/settlement/swap/mock"
-	"github.com/ethersphere/bee/pkg/staking/stakingcontract"
-	stakingContractMock "github.com/ethersphere/bee/pkg/staking/stakingcontract/mock"
+	"github.com/ethersphere/bee/pkg/staking"
+	stakingMock "github.com/ethersphere/bee/pkg/staking/mock"
 	"github.com/ethersphere/bee/pkg/statestore/leveldb"
 	mockStateStore "github.com/ethersphere/bee/pkg/statestore/mock"
 	mockSteward "github.com/ethersphere/bee/pkg/steward/mock"
@@ -366,9 +366,9 @@ func NewDevBee(logger log.Logger, o *DevOptions) (b *DevBee, err error) {
 	mockPinning := pinning.NewServiceMock()
 	mockSteward := new(mockSteward.Steward)
 
-	mockStaking := stakingContractMock.New(
-		stakingContractMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
-			return stakingcontract.ErrNotImplemented
+	mockStaking := stakingMock.New(
+		stakingMock.WithDepositStake(func(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
+			return staking.ErrNotImplemented
 		}))
 
 	debugOpts := api.ExtraOptions{
@@ -389,7 +389,7 @@ func NewDevBee(logger log.Logger, o *DevOptions) (b *DevBee, err error) {
 		FeedFactory:      mockFeeds,
 		Post:             post,
 		PostageContract:  postageContract,
-		StakingContract:  mockStaking,
+		Staking:          mockStaking,
 		Steward:          mockSteward,
 		SyncStatus:       syncStatusFn,
 	}

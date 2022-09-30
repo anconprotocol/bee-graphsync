@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/staking/stakingcontract"
+	"github.com/ethersphere/bee/pkg/staking"
 	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/gorilla/mux"
 )
@@ -50,19 +50,19 @@ func (s *Service) stakingDepositHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	err = s.stakingContract.DepositStake(r.Context(), stakedAmount, overlayAddr)
 	if err != nil {
-		if errors.Is(err, stakingcontract.ErrInsufficientStakeAmount) {
+		if errors.Is(err, staking.ErrInsufficientStakeAmount) {
 			s.logger.Debug("deposit stake: insufficient stake amount", "error", err)
 			s.logger.Error(nil, "deposit stake: insufficient stake amount")
 			jsonhttp.BadRequest(w, "minimum 1 BZZ required for staking")
 			return
 		}
-		if errors.Is(err, stakingcontract.ErrNotImplemented) {
+		if errors.Is(err, staking.ErrNotImplemented) {
 			s.logger.Debug("deposit stake: not implemented", "error", err)
 			s.logger.Error(nil, "deposit stake: not implemented")
 			jsonhttp.NotImplemented(w, "not implemented")
 			return
 		}
-		if errors.Is(err, stakingcontract.ErrInsufficientFunds) {
+		if errors.Is(err, staking.ErrInsufficientFunds) {
 			s.logger.Debug("deposit stake: out of funds", "error", err)
 			s.logger.Error(nil, "deposit stake: out of funds")
 			jsonhttp.BadRequest(w, "out of funds")

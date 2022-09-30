@@ -8,7 +8,7 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethersphere/bee/pkg/staking/stakingcontract"
+	"github.com/ethersphere/bee/pkg/staking"
 	"github.com/ethersphere/bee/pkg/swarm"
 )
 
@@ -25,11 +25,15 @@ func (s *stakingContractMock) GetStake(ctx context.Context, overlay swarm.Addres
 	return s.getStake(ctx, overlay)
 }
 
+func (s *stakingContractMock) IsStaked(ctx context.Context, overlay swarm.Address) (bool, error) {
+	return false, nil
+}
+
 // Option is a an option passed to New
 type Option func(mock *stakingContractMock)
 
 // New creates a new mock BatchStore
-func New(opts ...Option) stakingcontract.Interface {
+func New(opts ...Option) staking.Interface {
 	bs := &stakingContractMock{}
 
 	for _, o := range opts {
