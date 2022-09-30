@@ -136,7 +136,7 @@ func (s *contract) sendDepositStakeTransaction(ctx context.Context, owner common
 }
 
 func (s *contract) getStake(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
-	callData, err := stakingABI.Pack("stakeOfOverlay", overlay.Bytes())
+	callData, err := stakingABI.Pack("stakeOfOverlay", common.BytesToHash(overlay.Bytes()))
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *contract) getStake(ctx context.Context, overlay swarm.Address) (*big.In
 		return nil, fmt.Errorf("get stake: overlayAddress %d: %w", overlay, err)
 	}
 
-	results, err := erc20ABI.Unpack("stakeOfOverlay", result)
+	results, err := stakingABI.Unpack("stakeOfOverlay", result)
 	if err != nil {
 		return nil, err
 	}
@@ -157,27 +157,27 @@ func (s *contract) getStake(ctx context.Context, overlay swarm.Address) (*big.In
 }
 
 func (s *contract) DepositStake(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
-	//	prevStakedAmount, err := s.GetStake(ctx, overlay)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	if len(prevStakedAmount.Bits()) == 0 {
-	//		if stakedAmount.Cmp(MinimumStakeAmount) == -1 {
-	//			return ErrInsufficientStakeAmount
-	//		}
-	//	}
-	//
-	//	balance, err := s.getBalance(ctx)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	if balance.Cmp(stakedAmount) < 0 {
-	//		return ErrInsufficientFunds
-	//	}
+	prevStakedAmount, err := s.GetStake(ctx, overlay)
+	if err != nil {
+		return err
+	}
 
-	_, err := s.sendApproveTransaction(ctx, stakedAmount)
+	if len(prevStakedAmount.Bits()) == 0 {
+		if stakedAmount.Cmp(MinimumStakeAmount) == -1 {
+			return ErrInsufficientStakeAmount
+		}
+	}
+
+	balance, err := s.getBalance(ctx)
+	if err != nil {
+		return err
+	}
+
+	if balance.Cmp(stakedAmount) < 0 {
+		return ErrInsufficientFunds
+	}
+
+	_, err = s.sendApproveTransaction(ctx, stakedAmount)
 	if err != nil {
 		return err
 	}
