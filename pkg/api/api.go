@@ -656,7 +656,6 @@ func (s *Service) mapStructure(input, output interface{}) func(string, log.Logge
 			logger.Debug("mapping and validation failed", "error", err)
 			logger.Error(err, "mapping and validation failed")
 			jsonhttp.InternalServerError(w, err)
-			return
 		}
 	}
 
@@ -665,8 +664,13 @@ func (s *Service) mapStructure(input, output interface{}) func(string, log.Logge
 	}
 
 	if err := s.validate.Struct(output); err != nil {
+		var errs validator.ValidationErrors
+		if !errors.As(err, &errs) {
+			return response(fmt.Errorf("validation errors: %w", err))
+		}
+
 		vErrs := &multierror.Error{ErrorFormat: flattenErrorsFormat}
-		for _, err := range err.(validator.ValidationErrors) {
+		for _, err := range errs {
 			val := err.Value()
 			switch v := err.Value().(type) {
 			case []byte:
