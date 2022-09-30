@@ -962,16 +962,9 @@ func NewBee(interrupt chan struct{}, sysInterrupt chan os.Signal, addr string, p
 		depthMonitor := depthmonitor.New(kad, pullSyncProtocol, storer, batchStore, logger, warmupTime, depthmonitor.DefaultWakeupInterval)
 		b.depthMonitorCloser = depthMonitor
 
-		staked, err := staking.IsStaked(context.Background(), swarmAddress)
-		if err != nil {
-			return nil, err
-		}
-
 		// TODO: inject incentives contract, blocksRound, blocksPerPhase
-		if staked {
-			agent := storageincentives.New(swarmAddress, chainBackend, logger, depthMonitor, nil, batchStore, storer, o.BlockTime, 0, 0)
-			b.storageIncetivesCloser = agent
-		}
+		agent := storageincentives.New(swarmAddress, chainBackend, logger, depthMonitor, nil, batchStore, storer, o.BlockTime, 0, 0)
+		b.storageIncetivesCloser = agent
 	}
 
 	multiResolver := multiresolver.NewMultiResolver(
