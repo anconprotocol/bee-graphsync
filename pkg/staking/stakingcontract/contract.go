@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethersphere/bee/pkg/sctx"
+	"github.com/ethersphere/bee/pkg/staking"
 	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/ethersphere/bee/pkg/transaction"
 	"github.com/ethersphere/go-sw3-abi/sw3abi"
@@ -25,13 +26,13 @@ var (
 
 	erc20ABI = parseABI(sw3abi.ERC20ABIv0_3_1)
 	//TODO: get ABI for staking contract and replace it below
-	stakingABI = parseABI(sw3abi.ERC20ABIv0_3_1)
+	stakingABI = parseABI(staking.ABIv0_0_0)
 
 	ErrInsufficientStakeAmount = errors.New("insufficient stake amount")
 	ErrInsufficientFunds       = errors.New("insufficient token balance")
 	ErrNotImplemented          = errors.New("not implemented")
-
-	depositStakeDescription = "Deposit Stake"
+	approveDescription         = "Approve tokens for stake deposit operations"
+	depositStakeDescription    = "Deposit Stake"
 )
 
 type Interface interface {
@@ -63,6 +64,36 @@ func New(
 	}
 }
 
+func (s *contract) sendApproveTransaction(ctx context.Context, amount *big.Int) (*types.Receipt, error) {
+	callData, err := erc20ABI.Pack("approve", s.stakingContractAddress, amount)
+	if err != nil {
+		return nil, err
+	}
+
+	txHash, err := s.transactionService.Send(ctx, &transaction.TxRequest{
+		To:          &s.bzzTokenAddress,
+		Data:        callData,
+		GasPrice:    sctx.GetGasPrice(ctx),
+		GasLimit:    65000,
+		Value:       big.NewInt(0),
+		Description: approveDescription,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	receipt, err := s.transactionService.WaitForReceipt(ctx, txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if receipt.Status == 0 {
+		return nil, transaction.ErrTransactionReverted
+	}
+
+	return receipt, nil
+}
+
 func (s *contract) sendTransaction(ctx context.Context, callData []byte, desc string) (*types.Receipt, error) {
 	request := &transaction.TxRequest{
 		To:          &s.stakingContractAddress,
@@ -91,7 +122,7 @@ func (s *contract) sendTransaction(ctx context.Context, callData []byte, desc st
 }
 
 func (s *contract) sendDepositStakeTransaction(ctx context.Context, owner common.Address, stakedAmount *big.Int, nonce common.Hash) (*types.Receipt, error) {
-	callData, err := stakingABI.Pack("depositStake", owner, stakedAmount, nonce)
+	callData, err := stakingABI.Pack("depositStake", owner, nonce, stakedAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +136,7 @@ func (s *contract) sendDepositStakeTransaction(ctx context.Context, owner common
 }
 
 func (s *contract) getStake(ctx context.Context, overlay swarm.Address) (*big.Int, error) {
-	callData, err := stakingABI.Pack("stakeOfOverlay", overlay)
+	callData, err := stakingABI.Pack("stakeOfOverlay", overlay.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -126,24 +157,29 @@ func (s *contract) getStake(ctx context.Context, overlay swarm.Address) (*big.In
 }
 
 func (s *contract) DepositStake(ctx context.Context, stakedAmount *big.Int, overlay swarm.Address) error {
-	prevStakedAmount, err := s.GetStake(ctx, overlay)
+	//	prevStakedAmount, err := s.GetStake(ctx, overlay)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if len(prevStakedAmount.Bits()) == 0 {
+	//		if stakedAmount.Cmp(MinimumStakeAmount) == -1 {
+	//			return ErrInsufficientStakeAmount
+	//		}
+	//	}
+	//
+	//	balance, err := s.getBalance(ctx)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if balance.Cmp(stakedAmount) < 0 {
+	//		return ErrInsufficientFunds
+	//	}
+
+	_, err := s.sendApproveTransaction(ctx, stakedAmount)
 	if err != nil {
 		return err
-	}
-
-	if len(prevStakedAmount.Bits()) == 0 {
-		if stakedAmount.Cmp(MinimumStakeAmount) == -1 {
-			return ErrInsufficientStakeAmount
-		}
-	}
-
-	balance, err := s.getBalance(ctx)
-	if err != nil {
-		return err
-	}
-
-	if balance.Cmp(stakedAmount) < 0 {
-		return ErrInsufficientFunds
 	}
 
 	_, err = s.sendDepositStakeTransaction(ctx, s.owner, stakedAmount, s.overlayNonce)
