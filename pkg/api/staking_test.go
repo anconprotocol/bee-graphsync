@@ -56,15 +56,6 @@ func TestDepositStake(t *testing.T) {
 			jsonhttptest.WithExpectedJSONResponse(&jsonhttp.StatusResponse{Code: http.StatusBadRequest, Message: "minimum 1 BZZ required for staking"}))
 	})
 
-	t.Run("with invalid address", func(t *testing.T) {
-		t.Parallel()
-
-		invalidMinStake := big.NewInt(0).String()
-		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true})
-		jsonhttptest.Request(t, ts, http.MethodPost, depositStake("invalid address", invalidMinStake), http.StatusBadRequest,
-			jsonhttptest.WithExpectedJSONResponse(&jsonhttp.StatusResponse{Code: http.StatusBadRequest, Message: "invalid address"}))
-	})
-
 	t.Run("out of funds", func(t *testing.T) {
 		t.Parallel()
 
@@ -89,14 +80,6 @@ func TestDepositStake(t *testing.T) {
 		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true, StakingContract: contract})
 		jsonhttptest.Request(t, ts, http.MethodPost, depositStake(addr.String(), minStake), http.StatusInternalServerError)
 		jsonhttptest.WithExpectedJSONResponse(&jsonhttp.StatusResponse{Code: http.StatusInternalServerError, Message: "cannot stake"})
-	})
-
-	t.Run("with invalid amount", func(t *testing.T) {
-		t.Parallel()
-
-		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true})
-		jsonhttptest.Request(t, ts, http.MethodPost, depositStake(addr.String(), "abc"), http.StatusBadRequest,
-			jsonhttptest.WithExpectedJSONResponse(&jsonhttp.StatusResponse{Code: http.StatusBadRequest, Message: "invalid staking amount"}))
 	})
 
 	t.Run("gas limit header", func(t *testing.T) {
@@ -142,14 +125,6 @@ func TestGetStake(t *testing.T) {
 		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true, StakingContract: contract})
 		jsonhttptest.Request(t, ts, http.MethodGet, getStake(addr.String()), http.StatusOK,
 			jsonhttptest.WithExpectedJSONResponse(&api.GetStakeResponse{StakedAmount: big.NewInt(1)}))
-	})
-
-	t.Run("with invalid address", func(t *testing.T) {
-		t.Parallel()
-
-		ts, _, _, _ := newTestServer(t, testServerOptions{DebugAPI: true})
-		jsonhttptest.Request(t, ts, http.MethodGet, getStake("invalid address"), http.StatusBadRequest,
-			jsonhttptest.WithExpectedJSONResponse(&jsonhttp.StatusResponse{Code: http.StatusBadRequest, Message: "invalid address"}))
 	})
 
 	t.Run("with error", func(t *testing.T) {
