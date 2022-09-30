@@ -963,7 +963,7 @@ func NewBee(interrupt chan struct{}, sysInterrupt chan os.Signal, addr string, p
 		b.depthMonitorCloser = depthMonitor
 
 		// TODO: inject incentives contract, blocksRound, blocksPerPhase
-		agent := storageincentives.New(swarmAddress, chainBackend, logger, depthMonitor, nil, batchStore, storer, o.BlockTime, 0, 0)
+		agent := storageincentives.New(swarmAddress, chainBackend, logger, depthMonitor, nil, batchStore, storer, o.BlockTime, storageincentives.DefaultBlocksPerRound, storageincentives.DefaultBlocksPerPhase)
 		b.storageIncetivesCloser = agent
 	}
 
