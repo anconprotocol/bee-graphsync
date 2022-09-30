@@ -99,7 +99,7 @@ func (s *contract) sendTransaction(ctx context.Context, callData []byte, desc st
 		To:          &s.stakingContractAddress,
 		Data:        callData,
 		GasPrice:    sctx.GetGasPrice(ctx),
-		GasLimit:    sctx.GetGasLimitWithDefault(ctx, 3_000_000),
+		GasLimit:    sctx.GetGasLimitWithDefault(ctx, 300_000),
 		Value:       big.NewInt(0),
 		Description: desc,
 	}
