@@ -18,6 +18,7 @@ import (
 	"github.com/ethersphere/bee/pkg/postage"
 	"github.com/ethersphere/bee/pkg/storage"
 	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/ethersphere/bee/pkg/topology/depthmonitor"
 )
 
 const loggerName = "incentives"
@@ -45,21 +46,23 @@ type IncentivesContract interface {
 }
 
 type Agent struct {
-	logger   log.Logger
-	backend  ChainBackend
-	monitor  Monitor
-	contract IncentivesContract
-	reserve  postage.Storer
-	sampler  Sampler
-	overlay  swarm.Address
-	quit     chan struct{}
-	wg       sync.WaitGroup
+	logger       log.Logger
+	backend      ChainBackend
+	depthMonitor depthmonitor.Service
+	monitor      Monitor
+	contract     IncentivesContract
+	reserve      postage.Storer
+	sampler      Sampler
+	overlay      swarm.Address
+	quit         chan struct{}
+	wg           sync.WaitGroup
 }
 
 func New(
 	overlay swarm.Address,
 	backend ChainBackend,
 	logger log.Logger,
+	depthMonitor depthmonitor.Service,
 	monitor Monitor,
 	incentives IncentivesContract,
 	reserve postage.Storer,
@@ -67,14 +70,15 @@ func New(
 	blockTime time.Duration, blockPerRound, blocksPerPhase uint64) *Agent {
 
 	s := &Agent{
-		overlay:  overlay,
-		backend:  backend,
-		logger:   logger.WithName(loggerName).Register(),
-		contract: incentives,
-		reserve:  reserve,
-		monitor:  monitor,
-		sampler:  sampler,
-		quit:     make(chan struct{}),
+		overlay:      overlay,
+		backend:      backend,
+		depthMonitor: depthMonitor,
+		logger:       logger.WithName(loggerName).Register(),
+		contract:     incentives,
+		reserve:      reserve,
+		monitor:      monitor,
+		sampler:      sampler,
+		quit:         make(chan struct{}),
 	}
 
 	s.wg.Add(1)
@@ -255,6 +259,7 @@ func (s *Agent) start(blockTime time.Duration, blocksPerRound, blocksPerPhase ui
 		}
 
 		// write the current phase only once
+
 		if currentPhase != prevPhase {
 			s.logger.Info("entering phase", "phase", currentPhase.String(), "round", round, "block", block)
 
@@ -294,6 +299,12 @@ func (s *Agent) claim(ctx context.Context) error {
 }
 
 func (s *Agent) play(ctx context.Context) (uint8, []byte, error) {
+
+	// get depthmonitor fully synced indicator
+	ready := s.depthMonitor.FullySynced()
+	if !ready {
+		return 0, nil, nil
+	}
 
 	storageRadius := s.reserve.GetReserveState().StorageRadius
 
